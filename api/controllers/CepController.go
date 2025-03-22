@@ -3,16 +3,15 @@ package controllers
 import (
 	"api/api/clients"
 	"api/api/entities"
+	"api/infra/config/cache"
 	"api/infra/config/logger"
 	"net/http"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	cepCache = make(map[string]entities.Cep)
-	mutex sync.RWMutex
+	cepCache = cache.GetCache()
 )
 
 type cepController struct {
@@ -31,15 +30,11 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 	cep := ctx.Param("cep")
 
 	logger.Info("Looking for cep in local: " + cep)
-
-	mutex.RLock()
 	
 	if cachedData, exists := cepCache[cep]; exists {
-		mutex.RUnlock()
-		ctx.JSON(http.StatusOK, cachedData)
+		ctx.JSON(http.StatusOK, cachedData.Data)
 		return
 	}
-	mutex.RUnlock()
 
 	logger.Info("Not found in local, looking for in viacep: " + cep)
 	
@@ -51,7 +46,7 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 			"error": "CEP not found",
 		})
 		return
-	}
+	}	
 
 	newCep := entities.NewCep()
 	
@@ -65,9 +60,7 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 	value.ceps = append(value.ceps, *newCep)
 
 	logger.Info("Found in viacep: " + cep)
-	mutex.Lock()
-	cepCache[cep] = *newCep
-	mutex.Unlock()
+	cache.SetCache(cep, newCep)
 
 	ctx.JSON(http.StatusOK, newCep)
 }
