@@ -7,7 +7,7 @@ import (
 var Logger = logrus.New()
 
 func init() {
-	Logger.SetFormatter(&logrus.JSONFormatter{})
+	Logger.SetFormatter(&logrus.JSONFormatter{})	
 }
 
 func Log(level logrus.Level, message string) {
