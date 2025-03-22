@@ -3,7 +3,7 @@ package controllers
 import (
 	"api/api/clients"
 	"api/api/entities"
-	"fmt"
+	"api/infra/config/logger"
 	"net/http"
 	"sync"
 
@@ -30,7 +30,7 @@ func (value *cepController) FindAll(ctx *gin.Context) {
 func (value *cepController) FindByCep(ctx *gin.Context) {
 	cep := ctx.Param("cep")
 
-	fmt.Println("Looking for cep in local: ", cep)
+	logger.Info("Looking for cep in local: " + cep)
 
 	mutex.RLock()
 	
@@ -41,12 +41,12 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 	}
 	mutex.RUnlock()
 
-	fmt.Println("Not found in local, looking for in viacep: ", cep)
+	logger.Info("Not found in local, looking for in viacep: " + cep)
 	
 	cepResponse, err := clients.Get(cep)
 	
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error("Error getting cep from viacep: " + err.Error())
 		ctx.JSON(http.StatusNotFound, gin.H{
 			"error": "CEP not found",
 		})
@@ -64,7 +64,7 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 
 	value.ceps = append(value.ceps, *newCep)
 
-	fmt.Println("Found in viacep: ", cep)
+	logger.Info("Found in viacep: " + cep)
 	mutex.Lock()
 	cepCache[cep] = *newCep
 	mutex.Unlock()
