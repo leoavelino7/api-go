@@ -31,7 +31,9 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 
 	logger.Info("Looking for cep in local: " + cep)
 	
-	if cachedData, exists := cepCache[cep]; exists {
+	var cachedData, exists = cepCache[cep]
+
+	if exists && !cachedData.Expired {
 		ctx.JSON(http.StatusOK, cachedData.Data)
 		return
 	}
@@ -60,7 +62,11 @@ func (value *cepController) FindByCep(ctx *gin.Context) {
 	value.ceps = append(value.ceps, *newCep)
 
 	logger.Info("Found in viacep: " + cep)
-	cache.SetCache(cep, newCep)
+	if cachedData.Expired {
+		cache.UpdateCache(cep, newCep)
+	} else {
+		cache.SetCache(cep, newCep)
+	}
 
 	ctx.JSON(http.StatusOK, newCep)
 }
